@@ -63,6 +63,7 @@ self.addEventListener("fetch", async event => {
 
                 if (dynamicFreshURLs.includes(event.request.url)) {
                     const courses = await (response.clone()).json();
+                    await db.courses.clear();
                     await db.courses.bulkAdd(courses);
 
                 } else {
@@ -95,3 +96,24 @@ self.addEventListener("fetch", async event => {
         })()
     );
 })
+
+
+self.addEventListener("sync", async event => {
+    if (event.tag === "remove-course") {
+        const removedCourses = await db.removedCourses.toArray();
+        const removedCoursesIDs = removedCourses.map(course => course._id);
+        await removeHandler(removedCoursesIDs);
+    }
+})
+
+const removeHandler = async removedCoursesIDs => {
+    await Promise.all(
+        removedCoursesIDs.map(async courseID => await fetch(
+            `https://pwa-cms.iran.liara.run/api/courses/${courseID}`, {
+            method: "DELETE"
+        }))
+    );
+
+    await db.removedCourses.bulkDelete(removedCoursesIDs);
+    await db.courses.bulkDelete(removedCoursesIDs);
+}

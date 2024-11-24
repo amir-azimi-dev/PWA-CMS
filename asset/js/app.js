@@ -24,7 +24,7 @@ const fetchCourses = async () => {
         const courses = await getCoursesFromIndexedDB();
         return courses;
     }
-    
+
     const courses = await response.json();
     return courses;
 }
@@ -33,7 +33,7 @@ const showCourses = (courses) => {
     coursesContainer.innerHTML = "";
     courses.forEach(course => {
         const courseTemplate = `
-            <li class="courses-item">
+            <li class="courses-item" id="${course._id}">
               <div class="courses-img-title">
                 <img
                   src="asset/images/courses/PWA.jpg"
@@ -43,8 +43,8 @@ const showCourses = (courses) => {
                 <h5 class="courses-name">${course.title}</h5>
               </div>
               <div class="courses-btns">
-                <a href="" class="courses-btn-edit btn">ویرایش</a>
-                <a href="" class="courses-btn-delete btn">حذف</a>
+                <span onclick="editCourse('${course._id}')" class="courses-btn-edit btn">ویرایش</span>
+                <span onclick="removeCourse('${course._id}')" class="courses-btn-delete btn">حذف</span>
               </div>
             </li>
         `;
@@ -52,6 +52,32 @@ const showCourses = (courses) => {
         coursesContainer.insertAdjacentHTML("beforeend", courseTemplate);
     });
 }
+
+const isBGSyncAvailable = () => {
+    return ("serviceWorker" in navigator) && ("SyncManager" in window);
+}
+
+const editCourse = async _id => {
+    if (!isBGSyncAvailable()) {
+        return alert("You must install a sync manager!!!");
+    }
+}
+
+const removeCourse = async _id => {
+    if (!isBGSyncAvailable()) {
+        return alert("You must install a sync manager!!!");
+    }
+
+    const course = document.getElementById(_id);
+    course.remove();
+
+    await db.removedCourses.put({ _id });
+    await db.courses.delete(_id);
+
+    const sw = await navigator.serviceWorker.ready;
+    sw.sync.register("remove-course");
+}
+
 
 window.addEventListener("load", async () => {
     const courses = await fetchCourses();
