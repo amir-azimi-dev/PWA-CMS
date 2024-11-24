@@ -1,3 +1,6 @@
+importScripts("/asset/js/dexie.js");
+importScripts("/asset/js/db.js");
+
 // Version
 const cacheVersion = 1;
 const activeCaches = {
@@ -17,8 +20,8 @@ self.addEventListener("install", event => {
                 "/",
                 "/offline.html",    // fallback
                 "/manifest.json",
-                // "/sw.js",
-                // "/assets/js/app.js",
+                "/sw.js",
+                "/asset/js/app.js",
                 "/asset/style/style.css",
                 "/asset/style/fa.min.css",
             ])
@@ -60,9 +63,7 @@ self.addEventListener("fetch", async event => {
 
                 if (dynamicFreshURLs.includes(event.request.url)) {
                     const courses = await (response.clone()).json();
-                    await Promise.all(
-                        courses.map(async course => await db.courses.put(course))
-                    )
+                    await db.courses.bulkAdd(courses);
 
                 } else {
                     const cachedResponse = await caches.match(event.request);
@@ -80,6 +81,10 @@ self.addEventListener("fetch", async event => {
                 return response;
 
             } catch (error) {
+                if (dynamicFreshURLs.includes(event.request.url)) {
+                    return new Response("", { status: 400 });
+                }
+
                 const cachedResponse = await caches.match(event.request);
                 if (cachedResponse) {
                     return cachedResponse;

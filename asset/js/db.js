@@ -1,4 +1,4 @@
-const db = new Dexie("my-db");
+const db = new Dexie("courses");
 const dbVersion = 1;
 
 db.version(dbVersion).stores({
